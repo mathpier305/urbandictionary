@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">UrbanDictionary</string>
+    <string name="input_hint">Type a word for definition</string>
+    <string name="definition_list">List of Definition</string>
+    <string name="thumbs_up">Thumbs Up</string>
+    <string name="thumbs_down">Thumbs Down</string>
+    <string name="thumbs_default">Default</string>
+
+
+    <string-array name="sort_option">
+        <item> Default </item>
+        <item> Thumbs up</item>
+        <item> Thumbs Down</item>
+    </string-array>
+</resources>
