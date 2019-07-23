@@ -11,13 +11,22 @@ class SearchWordViewModel(application: Application) : AndroidViewModel(applicati
 
     val repository: DictionaryRepository = DictionaryRepository(application.applicationContext)
     var word: String = ""
-    private val definitions : LiveData<List<Dfinition>> ?= null
+    var sortOrder: Int = 0
+    var definitions: List<Dfinition> = emptyList()
 
-    fun isLoading() : MutableLiveData<Boolean> {
+    val isLoading: LiveData<Boolean> = isLoading()
+
+    fun isLoading(): MutableLiveData<Boolean> {
         return repository.isLoading
     }
 
-    fun getDefinitions(word:String, sortOrder: Int) : LiveData<List<Dfinition>>  {
+    fun getDefinitions(word: String, sortOrder: Int): LiveData<List<Dfinition>> {
+        this.word = word
+        this.sortOrder = sortOrder
         return repository.getDefinitions(word, sortOrder)
+    }
+
+    fun onSearchClicked(word: String) {
+        this.word = word
     }
 }

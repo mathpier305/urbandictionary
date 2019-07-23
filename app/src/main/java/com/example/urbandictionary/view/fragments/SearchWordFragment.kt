@@ -20,54 +20,66 @@ import android.widget.Toast
 import com.example.urbandictionary.R
 import com.example.urbandictionary.data.entities.Dfinition
 import com.example.urbandictionary.databinding.FragmentSearchWordsBinding
-import com.example.urbandictionary.utils.DictionaryConstants.Companion.DEFAULT_SORTING_KEY
+import com.example.urbandictionary.utils.DictionaryConstants
 import com.example.urbandictionary.view.adapter.DictionaryAdapter
+import com.example.urbandictionary.view.listener.EditTextListener
 import com.example.urbandictionary.view.viewmodel.SearchWordViewModel
 import kotlinx.android.synthetic.main.fragment_search_words.*
 
 class SearchWordFragment : Fragment() {
 
-    private lateinit var fragmentSearchWord: FragmentSearchWordsBinding
+    private lateinit var viewDataBinding: FragmentSearchWordsBinding
     private lateinit var searchWordViewModel: SearchWordViewModel
-    private lateinit var inputWord: String
     private lateinit var dictionaryAdapter: DictionaryAdapter
-    var sortOrder: Int = DEFAULT_SORTING_KEY
+    var inputText: String = ""
+    var definitions: List<Dfinition> = emptyList()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        fragmentSearchWord = DataBindingUtil.inflate(
+        viewDataBinding = DataBindingUtil.inflate(
             inflater,
             R.layout.fragment_search_words, container, false
         )
-        return fragmentSearchWord.root
+        viewDataBinding.lifecycleOwner = this.viewLifecycleOwner
+        return viewDataBinding.root
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
+
+    override fun onActivityCreated(savedInstanceState: Bundle?) {
+        super.onActivityCreated(savedInstanceState)
+
         searchWordViewModel = ViewModelProviders.of(this).get(SearchWordViewModel::class.java)
-        setEditTextAction()
+        viewDataBinding.viewmodel = searchWordViewModel
+        setupEditText()
 
         dictionaryAdapter = DictionaryAdapter(context!!)
-        fragmentSearchWord.recyclerView.apply {
+        viewDataBinding.recyclerView.apply {
             layoutManager = LinearLayoutManager(context)
             adapter = dictionaryAdapter
         }
         setSpinner()
 
-        searchWordViewModel.isLoading().observe(this, Observer<Boolean> { isLoading ->
-            if (isLoading!!) {
-                progressBar.visibility = View.VISIBLE
-            } else {
-                progressBar.visibility = View.INVISIBLE
-            }
-        })
+        if(savedInstanceState != null){
+            inputText = searchWordViewModel.word
+            performSearch()
+        }
     }
 
-    private fun setEditTextAction() {
-        fragmentSearchWord.inputText.setOnEditorActionListener(object : TextView.OnEditorActionListener {
+    private fun setupEditText() {
+
+        viewDataBinding.inputText.setOnEditorActionListener(object : TextView.OnEditorActionListener {
 
             override fun onEditorAction(v: TextView?, actionId: Int, event: KeyEvent?): Boolean {
 
                 if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                    viewDataBinding.listener = object: EditTextListener {
+                        override fun onSearchClicked() {
+                            searchWordViewModel.onSearchClicked(v?.text.toString())
+                        }
+                    }
+
+
+                    inputText = v?.text.toString()
+                    searchWordViewModel.word = inputText
                     performSearch()
                     return true
                 }
@@ -77,42 +89,50 @@ class SearchWordFragment : Fragment() {
     }
 
     private fun setSpinner() {
-        val spinner = fragmentSearchWord.spinner
-        val listOfItems = arrayOf("Default", "Up Desc Thumbs", "Down Desc Thumb")
+        val spinner = viewDataBinding.spinner
         val arrayAdapter: ArrayAdapter<String> =
-            ArrayAdapter(context!!, android.R.layout.simple_spinner_item, listOfItems)
+            ArrayAdapter(
+                context!!,
+                android.R.layout.simple_spinner_item,
+                DictionaryConstants.optionList.values.toList()
+            )
         arrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_item)
         spinner.adapter = arrayAdapter
-        fragmentSearchWord.spinner.onItemSelectedListener = (object : AdapterView.OnItemSelectedListener {
+        viewDataBinding.spinner.onItemSelectedListener = (object : AdapterView.OnItemSelectedListener {
             override fun onNothingSelected(parent: AdapterView<*>?) {
             }
 
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                 val a = parent!!.getItemAtPosition(position).toString()
                 Toast.makeText(this@SearchWordFragment.context, a, Toast.LENGTH_SHORT).show()
-                sortOrder = position
-                performSearch()
+                searchWordViewModel.sortOrder = position
+                if (searchWordViewModel.sortOrder != 0) {
+                    performSearch()
+                }
             }
         })
     }
 
     private fun performSearch() {
-        inputWord = fragmentSearchWord.inputText.text.toString()
-
-        if (!inputWord.isEmpty()) {
+        if (!inputText.isEmpty()) {
             observeDefinition()
         }
         dismissKeyboard()
     }
 
     private fun observeDefinition() {
-        searchWordViewModel.getDefinitions(inputWord, sortOrder).observe(this@SearchWordFragment,
+        searchWordViewModel.getDefinitions(inputText, searchWordViewModel.sortOrder).observe(this@SearchWordFragment,
             Observer<List<Dfinition>> { definitions ->
                 if (definitions!!.isNotEmpty()) {
-                    updateView(inputWord)
-                    dictionaryAdapter.setDefinitionList(definitions)
+                    this.definitions = definitions
+                    updateViews()
                 }
             })
+    }
+
+    private fun updateViews() {
+        updateView(inputText)
+        dictionaryAdapter.setDefinitionList(definitions)
     }
 
     private fun dismissKeyboard() {
@@ -125,8 +145,7 @@ class SearchWordFragment : Fragment() {
     }
 
     private fun updateView(word: String) {
-        fragmentSearchWord.definedWord.text = word
+        viewDataBinding.definedWord.text = word
     }
-
 
 }
