@@ -24,15 +24,22 @@ import com.example.urbandictionary.utils.DictionaryConstants
 import com.example.urbandictionary.view.adapter.DictionaryAdapter
 import com.example.urbandictionary.view.listener.EditTextListener
 import com.example.urbandictionary.view.viewmodel.SearchWordViewModel
-import kotlinx.android.synthetic.main.fragment_search_words.*
 
-class SearchWordFragment : Fragment() {
+class SearchWordFragment : Fragment(){
+
 
     private lateinit var viewDataBinding: FragmentSearchWordsBinding
     private lateinit var searchWordViewModel: SearchWordViewModel
     private lateinit var dictionaryAdapter: DictionaryAdapter
-    var inputText: String = ""
-    var definitions: List<Dfinition> = emptyList()
+    private var definitions: List<Dfinition> = emptyList()
+    private lateinit var listener: EditTextListener
+
+    override fun onAttach(context: Context?) {
+        super.onAttach(context)
+        if(context is EditTextListener){
+            listener = context
+        }
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         viewDataBinding = DataBindingUtil.inflate(
@@ -59,7 +66,6 @@ class SearchWordFragment : Fragment() {
         setSpinner()
 
         if(savedInstanceState != null){
-            inputText = searchWordViewModel.word
             performSearch()
         }
     }
@@ -71,15 +77,7 @@ class SearchWordFragment : Fragment() {
             override fun onEditorAction(v: TextView?, actionId: Int, event: KeyEvent?): Boolean {
 
                 if (actionId == EditorInfo.IME_ACTION_SEARCH) {
-                    viewDataBinding.listener = object: EditTextListener {
-                        override fun onSearchClicked() {
-                            searchWordViewModel.onSearchClicked(v?.text.toString())
-                        }
-                    }
-
-
-                    inputText = v?.text.toString()
-                    searchWordViewModel.word = inputText
+                    searchWordViewModel.onSearchClicked(v?.text.toString())
                     performSearch()
                     return true
                 }
@@ -114,14 +112,14 @@ class SearchWordFragment : Fragment() {
     }
 
     private fun performSearch() {
-        if (!inputText.isEmpty()) {
+        if (searchWordViewModel.word.isNotEmpty()) {
             observeDefinition()
         }
         dismissKeyboard()
     }
 
     private fun observeDefinition() {
-        searchWordViewModel.getDefinitions(inputText, searchWordViewModel.sortOrder).observe(this@SearchWordFragment,
+        searchWordViewModel.getDefinitions(searchWordViewModel.word, searchWordViewModel.sortOrder).observe(this@SearchWordFragment,
             Observer<List<Dfinition>> { definitions ->
                 if (definitions!!.isNotEmpty()) {
                     this.definitions = definitions
@@ -131,7 +129,7 @@ class SearchWordFragment : Fragment() {
     }
 
     private fun updateViews() {
-        updateView(inputText)
+        updateTermTitle()
         dictionaryAdapter.setDefinitionList(definitions)
     }
 
@@ -144,8 +142,8 @@ class SearchWordFragment : Fragment() {
         )
     }
 
-    private fun updateView(word: String) {
-        viewDataBinding.definedWord.text = word
+    private fun updateTermTitle() {
+        viewDataBinding.definedWord.text = searchWordViewModel.word
     }
 
 }

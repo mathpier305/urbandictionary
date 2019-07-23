@@ -12,7 +12,6 @@ class SearchWordViewModel(application: Application) : AndroidViewModel(applicati
     val repository: DictionaryRepository = DictionaryRepository(application.applicationContext)
     var word: String = ""
     var sortOrder: Int = 0
-    var definitions: List<Dfinition> = emptyList()
 
     val isLoading: LiveData<Boolean> = isLoading()
 
