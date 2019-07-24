@@ -22,24 +22,14 @@ import com.example.urbandictionary.data.entities.Dfinition
 import com.example.urbandictionary.databinding.FragmentSearchWordsBinding
 import com.example.urbandictionary.utils.DictionaryConstants
 import com.example.urbandictionary.view.adapter.DictionaryAdapter
-import com.example.urbandictionary.view.listener.EditTextListener
 import com.example.urbandictionary.view.viewmodel.SearchWordViewModel
 
-class SearchWordFragment : Fragment(){
-
+class SearchWordFragment : Fragment() {
 
     private lateinit var viewDataBinding: FragmentSearchWordsBinding
     private lateinit var searchWordViewModel: SearchWordViewModel
     private lateinit var dictionaryAdapter: DictionaryAdapter
     private var definitions: List<Dfinition> = emptyList()
-    private lateinit var listener: EditTextListener
-
-    override fun onAttach(context: Context?) {
-        super.onAttach(context)
-        if(context is EditTextListener){
-            listener = context
-        }
-    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         viewDataBinding = DataBindingUtil.inflate(
@@ -65,7 +55,7 @@ class SearchWordFragment : Fragment(){
         }
         setSpinner()
 
-        if(savedInstanceState != null){
+        if (savedInstanceState != null) {
             performSearch()
         }
     }
@@ -87,7 +77,6 @@ class SearchWordFragment : Fragment(){
     }
 
     private fun setSpinner() {
-        val spinner = viewDataBinding.spinner
         val arrayAdapter: ArrayAdapter<String> =
             ArrayAdapter(
                 context!!,
@@ -95,20 +84,13 @@ class SearchWordFragment : Fragment(){
                 DictionaryConstants.optionList.values.toList()
             )
         arrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_item)
-        spinner.adapter = arrayAdapter
-        viewDataBinding.spinner.onItemSelectedListener = (object : AdapterView.OnItemSelectedListener {
-            override fun onNothingSelected(parent: AdapterView<*>?) {
-            }
+        val itemSelectedListener = SimpleClass()
 
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                val a = parent!!.getItemAtPosition(position).toString()
-                Toast.makeText(this@SearchWordFragment.context, a, Toast.LENGTH_SHORT).show()
-                searchWordViewModel.sortOrder = position
-                if (searchWordViewModel.sortOrder != 0) {
-                    performSearch()
-                }
-            }
-        })
+        viewDataBinding.spinner.apply {
+            adapter = arrayAdapter
+            onItemSelectedListener = itemSelectedListener
+
+        }
     }
 
     private fun performSearch() {
@@ -119,13 +101,14 @@ class SearchWordFragment : Fragment(){
     }
 
     private fun observeDefinition() {
-        searchWordViewModel.getDefinitions(searchWordViewModel.word, searchWordViewModel.sortOrder).observe(this@SearchWordFragment,
-            Observer<List<Dfinition>> { definitions ->
-                if (definitions!!.isNotEmpty()) {
-                    this.definitions = definitions
-                    updateViews()
-                }
-            })
+        searchWordViewModel.getDefinitions(searchWordViewModel.word, searchWordViewModel.sortOrder)
+            .observe(this@SearchWordFragment,
+                Observer<List<Dfinition>> { definitions ->
+                    if (definitions!!.isNotEmpty()) {
+                        this.definitions = definitions
+                        updateViews()
+                    }
+                })
     }
 
     private fun updateViews() {
@@ -145,5 +128,21 @@ class SearchWordFragment : Fragment(){
     private fun updateTermTitle() {
         viewDataBinding.definedWord.text = searchWordViewModel.word
     }
+
+    inner class SimpleClass : AdapterView.OnItemSelectedListener {
+        override fun onNothingSelected(parent: AdapterView<*>?) {
+        }
+
+        override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+            val a = parent!!.getItemAtPosition(position).toString()
+            Toast.makeText(this@SearchWordFragment.context, a, Toast.LENGTH_SHORT).show()
+            searchWordViewModel.sortOrder = position
+            if (searchWordViewModel.sortOrder != 0) {
+                performSearch()
+            }
+
+        }
+    }
+
 
 }
